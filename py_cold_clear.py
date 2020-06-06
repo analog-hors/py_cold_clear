@@ -17,8 +17,8 @@ def init(path):
         COLD_CLEAR_LIB.cc_reset_async.restype = None
         COLD_CLEAR_LIB.cc_add_next_piece_async.restype = None
         COLD_CLEAR_LIB.cc_request_next_move.restype = None
-        COLD_CLEAR_LIB.cc_poll_next_move.restype = CCBotPollStatus
-        COLD_CLEAR_LIB.cc_block_next_move.restype = CCBotPollStatus
+        COLD_CLEAR_LIB.cc_poll_next_move.restype = ctypes.c_int
+        COLD_CLEAR_LIB.cc_block_next_move.restype = ctypes.c_int
         COLD_CLEAR_LIB.cc_default_options.restype = None
         COLD_CLEAR_LIB.cc_default_weights.restype = None
         COLD_CLEAR_LIB.cc_fast_weights.restype = None
