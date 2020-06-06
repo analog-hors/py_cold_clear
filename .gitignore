@@ -123,3 +123,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Cold Clear DLL for testing
+cold_clear.*
+
+.vscode
