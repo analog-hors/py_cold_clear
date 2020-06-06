@@ -68,6 +68,11 @@ class CCPlanPlacement(ctypes.Structure):
         ("cleared_lines", ctypes.c_int32 * 4)
     ]
 
+    def expected_cells_iter(self):
+        """Returns an iterator over the expected cell coordinates of the placement."""
+        for i in range(4):
+            yield self.expected_x[i], self.expected_y[i]
+
 class CCMove(ctypes.Structure):
     _fields_ = [
         # Whether hold is required
@@ -85,6 +90,16 @@ class CCMove(ctypes.Structure):
         ("depth", ctypes.c_uint32),
         ("original_rank", ctypes.c_uint32)
     ]
+
+    def expected_cells_iter(self):
+        """Returns an iterator over the expected cell coordinates of the placement."""
+        for i in range(4):
+            yield self.expected_x[i], self.expected_y[i]
+
+    def movements_iter(self):
+        """Returns an iterator over the movements for this move."""
+        for i in range(self.movement_count):
+            yield self.movements[i]
 
 class CCOptions(ctypes.Structure):
     _fields_ = [
@@ -281,7 +296,6 @@ if __name__ == "__main__":
     import collections
     import random
     import time
-    import os
     
     print("Starting demo.")
 
