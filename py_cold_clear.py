@@ -1,8 +1,10 @@
 """Python bindings to the Cold Clear Tetris Bot.
 Requires the `cold_clear` dynamic library (Not provided in this repo.)
 """
+from __future__ import annotations
 import ctypes
 import enum
+from typing import List, Generator
 
 COLD_CLEAR_LIB = None
 """The Cold Clear dynamic library."""
@@ -68,7 +70,7 @@ class CCPlanPlacement(ctypes.Structure):
         ("cleared_lines", ctypes.c_int32 * 4)
     ]
 
-    def expected_cells_iter(self):
+    def expected_cells_iter(self) -> Generator[(int, int), None, None]:
         """Returns an iterator over the expected cell coordinates of the placement."""
         for i in range(4):
             yield self.expected_x[i], self.expected_y[i]
@@ -91,12 +93,12 @@ class CCMove(ctypes.Structure):
         ("original_rank", ctypes.c_uint32)
     ]
 
-    def expected_cells_iter(self):
+    def expected_cells_iter(self) -> Generator[(int, int), None, None]:
         """Returns an iterator over the expected cell coordinates of the placement."""
         for i in range(4):
             yield self.expected_x[i], self.expected_y[i]
 
-    def movements_iter(self):
+    def movements_iter(self) -> Generator[CCMovement, None, None]:
         """Returns an iterator over the movements for this move."""
         for i in range(self.movement_count):
             yield self.movements[i]
@@ -113,7 +115,7 @@ class CCOptions(ctypes.Structure):
     ]
 
     @staticmethod
-    def default():
+    def default() -> CCOptions:
         """Returns the default options."""
         options = CCOptions()
         COLD_CLEAR_LIB.cc_default_options(ctypes.byref(options))
@@ -158,14 +160,14 @@ class CCWeights(ctypes.Structure):
     ]
 
     @staticmethod
-    def default():
+    def default() -> CCWeights:
         """Returns the default weights."""
         weights = CCWeights()
         COLD_CLEAR_LIB.cc_default_weights(ctypes.byref(weights))
         return weights
 
     @staticmethod
-    def fast():
+    def fast() -> CCWeights:
         """Returns the fast weights."""
         weights = CCWeights()
         COLD_CLEAR_LIB.cc_fast_weights(ctypes.byref(weights))
@@ -252,7 +254,7 @@ class CCHandle:
         """
         COLD_CLEAR_LIB.cc_request_next_move(self._handle, ctypes.c_uint32(incoming))
 
-    def _next_move_fn(self, fn, plan_length):
+    def _next_move_fn(self, fn, plan_length) -> (CCBotPollStatus, CCMove, List[CCBotPollStatus]):
         move = CCMove()
         plan = (CCPlanPlacement * plan_length)()
         plan_ptr = None
@@ -262,7 +264,7 @@ class CCHandle:
         status = fn(self._handle, ctypes.byref(move), plan_ptr, ctypes.byref(raw_plan_length))
         return status, move, plan[0:raw_plan_length.value]
 
-    def poll_next_move(self, plan_length = 0):
+    def poll_next_move(self, plan_length = 0) -> (CCBotPollStatus, CCMove, List[CCBotPollStatus]):
         """Checks to see if the bot has provided the previously requested move yet.
         
         The returned move contains both a path and the expected location of the placed piece. The
@@ -282,7 +284,7 @@ class CCHandle:
         """
         return self._next_move_fn(COLD_CLEAR_LIB.cc_poll_next_move, plan_length)
 
-    def block_next_move(self, plan_length = 0):
+    def block_next_move(self, plan_length = 0) -> (CCBotPollStatus, CCMove, List[CCBotPollStatus]):
         """This function is the same as `cc_poll_next_move` except when `cc_poll_next_move` would return
         `CC_WAITING` it instead waits until the bot has made a decision.
         
