@@ -174,8 +174,6 @@ class CCWeights(ctypes.Structure):
         return weights
 
 class CCHandle:
-    RawField = ctypes.c_bool * 400
-
     def __init__(self, options, weights):
         """Launches a bot thread with a blank board, empty queue, and all seven pieces in the bag,
         using the specified options and weights. Do not forget to call `terminate` after you are
@@ -215,7 +213,7 @@ class CCHandle:
         The field parameter is an iterable of 40 rows, which are iterables of 10 bools. The first
         element of the first row is the bottom-left cell.
         """
-        raw_field = RawField()
+        raw_field = (ctypes.c_bool * 400)()
         for y, row in enumerate(field):
             for x, cell in enumerate(row):
                 raw_field[x + y * 10] = cell
