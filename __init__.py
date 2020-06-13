@@ -1,4 +1,4 @@
-"""Python bindings to the Cold Clear Tetris Bot as of commit 6d0832d.
+"""Python bindings to the Cold Clear Tetris Bot as of commit e717758.
 Requires the `cold_clear` dynamic library (Not provided in this repo.)
 """
 from __future__ import annotations
@@ -15,6 +15,7 @@ def init(path):
     if COLD_CLEAR_LIB == None:
         COLD_CLEAR_LIB = ctypes.cdll.LoadLibrary(path)
         COLD_CLEAR_LIB.cc_launch_async.restype = ctypes.c_void_p
+        COLD_CLEAR_LIB.cc_launch_with_board_async.restype = ctypes.c_void_p
         COLD_CLEAR_LIB.cc_destroy_async.restype = None
         COLD_CLEAR_LIB.cc_reset_async.restype = None
         COLD_CLEAR_LIB.cc_add_next_piece_async.restype = None
@@ -174,16 +175,56 @@ class CCWeights(ctypes.Structure):
         return weights
 
 class CCHandle:
-    def __init__(self, options, weights):
-        """Launches a bot thread with a blank board, empty queue, and all seven pieces in the bag,
-        using the specified options and weights. Do not forget to call `terminate` after you are
+    def __init__(self, handle):
+        """Creates a new CCHandle from a raw void pointer. Do not use this constructor unless you know
+        what you are doing; Use the `CCHandle.launch` and `CCHandle.launch_with_board` functions instead.
+        """
+        self._handle = handle
+
+    @staticmethod
+    def launch(options, weights):
+        """Launches a bot thread with a blank board, empty queue, and all seven pieces in the bag, using
+        the specified options and weights. Do not forget to call `CCHandle::terminate` after you are
         done with the bot. Alternatively, you can use a `with` statement to handle this automatically.
         """
-        # `ctypes.c_void_p` is special in that if it's returned from a C function it gets converted
-        # to a python `int` or something, so it has to be `cast`ed back into a void pointer to
-        # actually be useful. Go figure.
-        self._handle = ctypes.cast(COLD_CLEAR_LIB.cc_launch_async(ctypes.byref(options), ctypes.byref(weights)), ctypes.c_void_p)
+        return CCHandle(ctypes.cast(COLD_CLEAR_LIB.cc_launch_async(ctypes.byref(options), ctypes.byref(weights)), ctypes.c_void_p))
     
+    @staticmethod
+    def _field_to_raw(field):
+        raw_field = (ctypes.c_bool * 400)()
+        for y, row in enumerate(field):
+            for x, cell in enumerate(row):
+                raw_field[x + y * 10] = cell
+        return raw_field
+
+    @staticmethod
+    def launch_with_board(options, weights, field, bag, hold, b2b, combo):
+        """Launches a bot thread with a predefined field, an empty queue, remaining pieces in the bag,
+        an optional hold piece, back-to-back status and combo count. This allows you to start Cold Clear
+        from the middle of a game.
+
+        The `bag` parameter is an iterable of `CCPiece`es indicating which pieces are still in the bag.
+        This must match the next few pieces provided to Cold Clear via `CCHandle::add_next_piece` later.
+
+        The field parameter is an iterable of 40 rows, which are iterables of 10 bools. The first element
+        of the first row is the bottom-left cell.
+
+        The hold parameter is the current hold piece as a `CCPiece`, or `None` if hold is empty.
+        """
+        raw_field = CCHandle._field_to_raw(field)
+        raw_bag = 0
+        for piece in bag:
+            raw_bag |= 1 << piece
+        return CCHandle(ctypes.cast(COLD_CLEAR_LIB.cc_launch_with_board_async(
+            ctypes.byref(options),
+            ctypes.byref(weights),
+            ctypes.byref(raw_field),
+            ctypes.c_uint32(raw_bag),
+            ctypes.byref(hold) if hold != None else None,
+            ctypes.c_bool(b2b),
+            ctypes.c_uint32(combo)
+        ), ctypes.c_void_p))
+
     def terminate(self):
         """Terminates the handle and frees the memory associated with the bot. Do not forget to call
         this function after you are done with the bot. Alternatively, you can use a `with` statement
@@ -196,7 +237,7 @@ class CCHandle:
     def __enter__(self):
         return self
 
-    def __exit__(self, *a):
+    def __exit__(self, *args):
         self.terminate()
 
     def reset(self, field, b2b, combo):
@@ -213,10 +254,7 @@ class CCHandle:
         The field parameter is an iterable of 40 rows, which are iterables of 10 bools. The first
         element of the first row is the bottom-left cell.
         """
-        raw_field = (ctypes.c_bool * 400)()
-        for y, row in enumerate(field):
-            for x, cell in enumerate(row):
-                raw_field[x + y * 10] = cell
+        raw_field = CCHandle._field_to_raw(field)
         COLD_CLEAR_LIB.cc_reset_async(self._handle, ctypes.byref(raw_field), ctypes.c_bool(b2b), ctypes.c_uint32(combo))
 
     def add_next_piece(self, piece):
@@ -308,7 +346,7 @@ if __name__ == "__main__":
             print("Invalid path.")
     init(dll_path)
 
-    with CCHandle(CCOptions.default(), CCWeights.default()) as bot:
+    with CCHandle.launch(CCOptions.default(), CCWeights.default()) as bot:
         field = [[False for x in range(10)] for y in range(40)]
         queue = collections.deque()
         bag = list(CCPiece)
