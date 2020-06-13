@@ -1,4 +1,4 @@
-"""Python bindings to the Cold Clear Tetris Bot.
+"""Python bindings to the Cold Clear Tetris Bot as of commit 6d0832d.
 Requires the `cold_clear` dynamic library (Not provided in this repo.)
 """
 from __future__ import annotations
