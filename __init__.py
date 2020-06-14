@@ -1,4 +1,4 @@
-"""Python bindings to the Cold Clear Tetris Bot as of commit e717758.
+"""Python bindings to the Cold Clear Tetris Bot as of commit 2a0bb82.
 Requires the `cold_clear` dynamic library (Not provided in this repo.)
 """
 from __future__ import annotations
@@ -28,12 +28,12 @@ def init(path):
 
 class CCPiece(enum.IntEnum):
     I = 0
-    T = 1
-    O = 2
-    S = 3
-    Z = 4
-    L = 5
-    J = 6
+    O = 1
+    T = 2
+    L = 3
+    J = 4
+    S = 5
+    Z = 6
 
 class CCTspinStatus(enum.IntEnum):
     NONE = 0
