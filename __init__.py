@@ -63,7 +63,7 @@ class CCPlanPlacement(ctypes.Structure):
         ("piece", ctypes.c_int),
         ("tspin", ctypes.c_int),
 
-        # Expected cell coordinates of placement, (0, 0) being the bottom left
+        # Expected cell coordinates of placement, (0, 0) being the bottom-left
         ("expected_x", ctypes.c_uint8 * 4),
         ("expected_y", ctypes.c_uint8 * 4),
 
@@ -80,7 +80,7 @@ class CCMove(ctypes.Structure):
     _fields_ = [
         # Whether hold is required
         ("hold", ctypes.c_bool),
-        # Expected cell coordinates of placement, (0, 0) being the bottom left
+        # Expected cell coordinates of placement, (0, 0) being the bottom-left
         ("expected_x", ctypes.c_uint8 * 4),
         ("expected_y", ctypes.c_uint8 * 4),
         # Number of moves in the path
@@ -176,15 +176,15 @@ class CCWeights(ctypes.Structure):
 
 class CCHandle:
     def __init__(self, handle):
-        """Creates a new CCHandle from a raw void pointer. Do not use this constructor unless you know
-        what you are doing; Use the `CCHandle.launch` and `CCHandle.launch_with_board` functions instead.
+        """Creates a new `CCHandle` from a raw void pointer. Do not use this constructor unless you know
+        what you are doing; Use the `CCHandle::launch` and `CCHandle::launch_with_board` functions instead.
         """
         self._handle = handle
 
     @staticmethod
     def launch(options, weights):
         """Launches a bot thread with a blank board, empty queue, and all seven pieces in the bag, using
-        the specified options and weights. Do not forget to call `CCHandle::terminate` after you are
+        the specified options and weights. Do not forget to call `CCHandle.terminate` after you are
         done with the bot. Alternatively, you can use a `with` statement to handle this automatically.
         """
         return CCHandle(ctypes.cast(COLD_CLEAR_LIB.cc_launch_async(ctypes.byref(options), ctypes.byref(weights)), ctypes.c_void_p))
@@ -204,7 +204,7 @@ class CCHandle:
         from the middle of a game.
 
         The `bag` parameter is an iterable of `CCPiece`es indicating which pieces are still in the bag.
-        This must match the next few pieces provided to Cold Clear via `CCHandle::add_next_piece` later.
+        This must match the next few pieces provided to Cold Clear via `CCHandle.add_next_piece` later.
 
         The field parameter is an iterable of 40 rows, which are iterables of 10 bools. The first element
         of the first row is the bottom-left cell.
@@ -277,20 +277,20 @@ class CCHandle:
         to provide the first move because it cannot know what piece it will be placing if it chooses
         to hold. Another example: in a game with zero piece previews and hold disabled, the bot
         will only be able to provide a move after the current piece spawns and you provide the piece
-        information to the bot using `cc_add_next_piece_async`.
+        information to the bot using `CCHandle.add_next_piece`.
 
         It is recommended that you call this function the frame before the piece spawns so that the
         bot has time to finish its current thinking cycle and supply the move.
 
         Once a move is chosen, the bot will update its internal state to the result of the piece
-        being placed correctly and the move will become available by calling `cc_poll_next_move`.
+        being placed correctly and the move will become available by calling `CCHandle.poll_next_move`.
 
         The incoming parameter specifies the number of lines of garbage the bot is expected to receive
         after placing the next piece.
         """
         COLD_CLEAR_LIB.cc_request_next_move(self._handle, ctypes.c_uint32(incoming))
 
-    def _next_move_fn(self, fn, plan_length) -> (CCBotPollStatus, CCMove, List[CCBotPollStatus]):
+    def _next_move_fn(self, fn, plan_length) -> (CCBotPollStatus, CCMove, List[CCPlanPlacement]):
         move = CCMove()
         plan = (CCPlanPlacement * plan_length)()
         plan_ptr = None
@@ -300,32 +300,32 @@ class CCHandle:
         status = fn(self._handle, ctypes.byref(move), plan_ptr, ctypes.byref(raw_plan_length))
         return status, move, plan[0:raw_plan_length.value]
 
-    def poll_next_move(self, plan_length = 0) -> (CCBotPollStatus, CCMove, List[CCBotPollStatus]):
+    def poll_next_move(self, plan_length = 0) -> (CCBotPollStatus, CCMove, List[CCPlanPlacement]):
         """Checks to see if the bot has provided the previously requested move yet.
         
         The returned move contains both a path and the expected location of the placed piece. The
         returned path is reasonably good, but you might want to use your own pathfinder to, for
         example, exploit movement intricacies in the game you're playing.
 
-        If the piece couldn't be placed in the expected location, you must call `cc_reset_async` to
+        If the piece couldn't be placed in the expected location, you must call `CCHandle.reset` to
         reset the game field, back-to-back status, and combo values.
 
-        If `plan` and `plan_length` are not `NULL` and this function provides a move, a placement plan
-        will be returned in the array pointed to by `plan`. `plan_length` should point to the length
-        of the array, and the number of plan placements provided will be returned through this pointer.
+        This will attempt to return a plan the length of `plan_length`, but note the returned array
+        may be shorter than `plan_length`.
 
-        If the move has been provided, this function will return `CCBotPollStatus.MOVE_PROVIDED`.
-        If the bot has not produced a result, this function will return `CCBotPollStatus.WAITING`.
-        If the bot has found that it cannot survive, this function will return `CCBotPollStatus.DEAD`
+        If the move has been provided, this function will return `CCBotPollStatus::MOVE_PROVIDED`.
+        If the bot has not produced a result, this function will return `CCBotPollStatus::WAITING`.
+        If the bot has found that it cannot survive, this function will return `CCBotPollStatus::DEAD`
         """
         return self._next_move_fn(COLD_CLEAR_LIB.cc_poll_next_move, plan_length)
 
     def block_next_move(self, plan_length = 0) -> (CCBotPollStatus, CCMove, List[CCBotPollStatus]):
-        """This function is the same as `cc_poll_next_move` except when `cc_poll_next_move` would return
-        `CC_WAITING` it instead waits until the bot has made a decision.
+        """This function is the same as `CCHandle.poll_next_move` except when `CCHandle.poll_next_move`
+        would return `CCBotPollStatus::CC_WAITING` it instead waits until the bot has made a decision.
         
-        If the move has been provided, this function will return `CC_MOVE_PROVIDED`.
-        If the bot has found that it cannot survive, this function will return `CC_BOT_DEAD`
+        If the move has been provided, this function will return `CCBotPollStatus::CC_MOVE_PROVIDED`.
+        If the bot has found that it cannot survive, this function will return
+        `CCBotPollStatus::CC_BOT_DEAD`
         """
         return self._next_move_fn(COLD_CLEAR_LIB.cc_block_next_move, plan_length)
 
