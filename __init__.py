@@ -1,4 +1,4 @@
-"""Python bindings to the Cold Clear Tetris Bot as of commit 2a0bb82.
+"""Python bindings to the Cold Clear Tetris Bot as of commit bdf21ce.
 Requires the `cold_clear` dynamic library (Not provided in this repo.)
 """
 from __future__ import annotations
@@ -40,13 +40,16 @@ class CCTspinStatus(enum.IntEnum):
     MINI = 1
     FULL = 2
 
-
 class CCMovement(enum.IntEnum):
     LEFT = 0
     RIGHT = 1
     CW = 2
     CCW = 3
     DROP = 4
+
+class CCSpawnRule(enum.IntEnum):
+    ROW_19_OR_20 = 0
+    ROW_21_AND_FALL = 1
 
 class CCMovementMode(enum.IntEnum):
     ZERO_G = 0
@@ -107,6 +110,7 @@ class CCMove(ctypes.Structure):
 class CCOptions(ctypes.Structure):
     _fields_ = [
         ("mode", ctypes.c_int),
+        ("spawn_rule", ctypes.c_int),
         ("use_hold", ctypes.c_bool),
         ("speculate", ctypes.c_bool),
         ("pcloop", ctypes.c_bool),
