@@ -1,4 +1,4 @@
-"""Python bindings to the Cold Clear Tetris Bot as of commit bdf21ce.
+"""Python bindings to the Cold Clear Tetris Bot as of commit 5fa0b9a.
 Requires the `cold_clear` dynamic library (Not provided in this repo.)
 """
 from __future__ import annotations
@@ -131,6 +131,7 @@ class CCWeights(ctypes.Structure):
         ("back_to_back", ctypes.c_int32),
         ("bumpiness", ctypes.c_int32),
         ("bumpiness_sq", ctypes.c_int32),
+        ("row_transitions", ctypes.c_int32),
         ("height", ctypes.c_int32),
         ("top_half", ctypes.c_int32),
         ("top_quarter", ctypes.c_int32),
@@ -161,7 +162,9 @@ class CCWeights(ctypes.Structure):
         ("move_time", ctypes.c_int32),
         ("wasted_t", ctypes.c_int32),
 
-        ("use_bag", ctypes.c_bool)
+        ("use_bag", ctypes.c_bool),
+        ("timed_jeopardy", ctypes.c_bool),
+        ("stack_pc_damage", ctypes.c_bool)
     ]
 
     @staticmethod
