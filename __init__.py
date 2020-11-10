@@ -61,6 +61,11 @@ class CCBotPollStatus(enum.IntEnum):
     WAITING = 1
     DEAD = 2
 
+class CCPcPriority(enum.IntEnum):
+    OFF = 0
+    FASTEST = 1
+    ATTACK = 2
+
 class CCPlanPlacement(ctypes.Structure):
     _fields_ = [
         ("piece", ctypes.c_int),
@@ -111,12 +116,12 @@ class CCOptions(ctypes.Structure):
     _fields_ = [
         ("mode", ctypes.c_int),
         ("spawn_rule", ctypes.c_int),
-        ("use_hold", ctypes.c_bool),
-        ("speculate", ctypes.c_bool),
-        ("pcloop", ctypes.c_bool),
+        ("pcloop", ctypes.c_int),
         ("min_nodes", ctypes.c_uint32),
         ("max_nodes", ctypes.c_uint32),
-        ("threads", ctypes.c_uint32)
+        ("threads", ctypes.c_uint32),
+        ("use_hold", ctypes.c_bool),
+        ("speculate", ctypes.c_bool)
     ]
 
     @staticmethod
